@@ -45,7 +45,9 @@ export async function createDodoCheckout(input: CheckoutInput) {
     product_cart: [{ product_id: productId, quantity: 1, amount: input.amountCents }],
     cancel_url: input.cancelUrl,
     return_url: input.returnUrl,
+    billing_currency: "USD",
     customization: { theme: "dark" },
+    feature_flags: { allow_currency_selection: false, allow_discount_code: false },
     metadata: { outbidall_payment_id: input.paymentRecordId },
   });
 
@@ -56,6 +58,7 @@ export async function createDodoCheckout(input: CheckoutInput) {
 export type DodoPaymentEvent = {
   paymentId: string;
   amountCents: number;
+  currency: string;
   payerEmail: string | null;
   paymentRecordId: string | null;
   metadata: Record<string, string>;
@@ -70,7 +73,7 @@ export function unwrapDodoWebhook(rawBody: string, headers: Headers): { type: st
     },
   });
   if (event.type !== "payment.succeeded" && event.type !== "payment.failed" && event.type !== "payment.cancelled") return { type: event.type, payment: null };
-  const payment = event.data as { payment_id: string; total_amount: number; customer?: { email?: string | null }; metadata?: Record<string, string> };
+  const payment = event.data as { payment_id: string; total_amount: number; currency: string; customer?: { email?: string | null }; metadata?: Record<string, string> };
   const metadata = payment.metadata ?? {};
-  return { type: event.type, payment: { paymentId: payment.payment_id, amountCents: payment.total_amount, payerEmail: payment.customer?.email ?? null, paymentRecordId: metadata.outbidall_payment_id ?? null, metadata } };
+  return { type: event.type, payment: { paymentId: payment.payment_id, amountCents: payment.total_amount, currency: payment.currency, payerEmail: payment.customer?.email ?? null, paymentRecordId: metadata.outbidall_payment_id ?? null, metadata } };
 }

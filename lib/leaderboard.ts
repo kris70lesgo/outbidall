@@ -88,11 +88,12 @@ export async function markContributionFailed(paymentId: string) {
   await supabase.from("bids").update({ status: "failed" }).eq("id", payment.bid_id).eq("status", "pending");
 }
 
-export async function markContributionSucceeded(input: { paymentId: string; providerCaptureId: string; payerEmail: string | null; metadata: Record<string, string> }) {
+export async function markContributionSucceeded(input: { paymentId: string; providerCaptureId: string; amountCents: number; currency: string; payerEmail: string | null; metadata: Record<string, string> }) {
   const supabase = database();
-  const { data: payment, error: paymentError } = await supabase.from("payments").select("id,status").eq("id", input.paymentId).eq("provider", "dodo").maybeSingle();
+  const { data: payment, error: paymentError } = await supabase.from("payments").select("id,status,amount_cents").eq("id", input.paymentId).eq("provider", "dodo").maybeSingle();
   if (paymentError || !payment) throw new Error("Unknown Dodo payment.");
   if (payment.status === "completed") return;
+  if (input.currency !== "USD" || input.amountCents < payment.amount_cents) throw new Error("Dodo payment amount does not match the bid.");
   const { error: updateError } = await supabase.from("payments").update({
     provider_capture_id: input.providerCaptureId,
     payer_email: input.payerEmail,

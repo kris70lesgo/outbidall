@@ -12,6 +12,8 @@ export async function POST(request: Request) {
       await markContributionSucceeded({
         paymentId: event.payment.paymentRecordId,
         providerCaptureId: event.payment.paymentId,
+        amountCents: event.payment.amountCents,
+        currency: event.payment.currency,
         payerEmail: event.payment.payerEmail,
         metadata: event.payment.metadata,
       });
